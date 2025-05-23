@@ -1,0 +1,228 @@
+---
+title: 'Final Project - Step 2 (20 Points)'
+subtitle: "PSTAT100: Data Science Concepts and Analysis" 
+
+author:
+  - name: "Ali Abuzaid"
+    affiliations:
+      - name: "Fall 2024"
+affiliation-title: "Quarter"
+format: 
+ pdf: 
+    latex_engine: xelatex
+    geometry: "a4paper, margin=0.5in, landscape"
+    code-fold: true
+    code-line-numbers: true
+    code-copy: true
+    code-tools: true
+    self-contained: true
+    toc: false
+    toc-location: left
+    number-sections: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message =  FALSE)
+knitr::opts_chunk$set(warning =  FALSE)
+knitr::opts_chunk$set(error =  FALSE)
+bfcolor <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{\\textbf{%s}}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'><b>%s</b></span>", color, x)
+  } else x
+}
+```
+
+
+:::callout
+<div style="text-align: center">
+<span style="color: blue;"> **STUDENT NAME **</span> 
+</div>
+- Dongzhen Huangfu    (3137544)
+- Harry He            (7133085)
+- Xihua Yao           (5927777)
+- Yue Zhu             (A1F8C52)
+- Tina Zhou           (4876165)
+:::
+
+
+::: {.callout-caution}
+## Due Date
+The deadline for this step is **November 8, 2024**.
+:::
+
+
+:::{.callout-tip}
+# Instructions
+The goal of this step is to develop clear research questions and hypotheses based on your selected dataset and to conduct a thorough Exploratory Data Analysis (EDA). This process will set the foundation for your later analysis and insights.
+
+:::
+
+# Step 2: Research Questions, Hypotheses, and Exploratory Data Analysis (EDA)
+
+
+## Research Questions
+
+**Question 1**
+What is the correlation between each penguins' traits (body mass, flipper length, culmen length and culmen depth) of all three types of penguins?
+
+**Question 2**
+How do external factors (environment and food resource) and internal factor (gender difference) affect body mass? Which above factor influences it most?
+
+## Hypotheses
+
+**Hypothesis 1**
+Ho: There are no significant differences in body measurement(body mass, flipper length, culmen length and culmen depth)among the 3 penguin species.
+Ha: There is at least one body measurement that differs significantly among the 3 penguin species.
+
+**Hypothesis 2**
+Both external factors (food resource) and the internal factor (gender difference) significantly affect variations in body mass. External factor have a greater influence on body mass of penguins than internal factor.
+
+## Exploratory Data Analysis (EDA)
+
+## Data Cleaning
+We delete rows that contain N/A.
+```{r}
+# We delete rows that contain N/A
+library(dplyr)
+library(palmerpenguins)
+data <- penguins_raw %>% select(-Comments)
+sorted_data <- na.omit(data)
+```
+
+## Descriptive Statistics
+```{r, echo=FALSE}
+library(dplyr)
+# Filter data by species
+adelie_data <- sorted_data %>% filter(grepl("Adelie", Species, ignore.case = TRUE))
+chinstrap_data <- sorted_data %>% filter(grepl("Chinstrap", Species, ignore.case = TRUE))
+gentoo_data <- sorted_data %>% filter(grepl("Gentoo", Species, ignore.case = TRUE))
+selected_columns <- c("Culmen Length (mm)", "Culmen Depth (mm)", "Flipper Length (mm)", "Body Mass (g)", "Delta 15 N (o/oo)", "Delta 13 C (o/oo)")
+# Select only relevant columns for each species
+adelie_data_selected <- adelie_data %>% select(all_of(selected_columns))
+chinstrap_data_selected <- chinstrap_data %>% select(all_of(selected_columns))
+gentoo_data_selected <- gentoo_data %>% select(all_of(selected_columns))
+# Summary statistics for each species
+summary_adelie <- summary(adelie_data_selected)
+summary_chinstrap <- summary(chinstrap_data_selected)
+summary_gentoo <- summary(gentoo_data_selected)
+
+print("Summary for Adelie Penguins (Selected Variables):")
+print(summary_adelie)
+
+print("Summary for Chinstrap Penguins (Selected Variables):")
+print(summary_chinstrap)
+
+print("Summary for Gentoo Penguins (Selected Variables):")
+print(summary_gentoo)
+
+```
+
+## Data Visualization
+```{r, fig.height=9, fig.width=20, echo=FALSE}
+#Research Question 1
+
+selected_columns_heatmap <- c("Culmen Length (mm)", "Culmen Depth (mm)", "Flipper Length (mm)", "Body Mass (g)")
+
+adelie_heatmap <- adelie_data_selected %>% select(all_of(selected_columns_heatmap))
+chinstrap_heatmap <- chinstrap_data_selected %>% select(all_of(selected_columns_heatmap))
+gentoo_heatmap <- gentoo_data_selected %>% select(all_of(selected_columns_heatmap))
+
+library(reshape2)
+library(ggplot2)
+
+adelie_cormat <- melt(round(cor(adelie_heatmap), 2))
+chinstrap_cormat <- melt(round(cor(chinstrap_heatmap), 2))
+gentoo_cormat <- melt(round(cor(gentoo_heatmap), 2))
+
+p1 <- ggplot(data = adelie_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  geom_text(aes(label = value), color = "white", size = 4) +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  xlab("") +
+  ylab("") +
+  ggtitle("Adelie")
+p2 <- ggplot(data = chinstrap_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  geom_text(aes(label = value), color = "white", size = 4) +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  xlab("") +
+  ylab("") +
+  ggtitle("Chinstrap")
+p3 <- ggplot(data = gentoo_cormat, aes(x=Var1, y=Var2, fill=value)) + 
+  geom_tile() +
+  geom_text(aes(label = value), color = "white", size = 4) +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1)) +
+  xlab("") +
+  ylab("") +
+  ggtitle("Gentoo")
+
+library(gridExtra)
+library(grid)
+grid.arrange(ggplotGrob(p1), ggplotGrob(p2), ggplotGrob(p3), ncol=3, 
+             top = textGrob("Correlation Heatmap of Key Traits for Three Types of Penguins", gp=gpar(fontsize=20)))
+```
+
+
+```{r, fig.height=9, fig.width=20, echo=FALSE}
+#Research Question 2
+selected_columns_2 <- c("Body Mass (g)", "Delta 15 N (o/oo)", "Delta 13 C (o/oo)", "Sex", "Island")
+
+adelie_2 <- adelie_data %>% select(all_of(selected_columns_2))
+chinstrap_2 <- chinstrap_data %>% select(all_of(selected_columns_2))
+gentoo_2 <- gentoo_data %>% select(all_of(selected_columns_2))
+
+p1 <- ggplot(data = adelie_2, aes(x = `Delta 15 N (o/oo)`, y = `Body Mass (g)`, color = `Delta 13 C (o/oo)`, shape = Sex)) +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(
+    title = "[Adelie Penguins]",
+    x = "Delta 15 N (o/oo)",
+    y = "Body Mass (g)",
+    color = "Delta 13 C (o/oo)",
+    shape = "Sex"
+  ) +
+  scale_color_gradient(low = "blue", high = "red") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p2 <- ggplot(data = chinstrap_2, aes(x = `Delta 15 N (o/oo)`, y = `Body Mass (g)`, color = `Delta 13 C (o/oo)`, shape = Sex)) +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(
+    title = "[Chinstrap Penguins]",
+    x = "Delta 15 N (o/oo)",
+    y = "Body Mass (g)",
+    color = "Delta 13 C (o/oo)",
+    shape = "Sex"
+  ) +
+  scale_color_gradient(low = "blue", high = "red") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+p3 <- ggplot(data = gentoo_2, aes(x = `Delta 15 N (o/oo)`, y = `Body Mass (g)`, color = `Delta 13 C (o/oo)`, shape = Sex)) +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(
+    title = "[Gentoo Penguins]",
+    x = "Delta 15 N (o/oo)",
+    y = "Body Mass (g)",
+    color = "Delta 13 C (o/oo)",
+    shape = "Sex"
+  ) +
+  scale_color_gradient(low = "blue", high = "red") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+library(gridExtra)
+grid.arrange(ggplotGrob(p1), ggplotGrob(p2), ggplotGrob(p3), ncol=3, 
+             top = textGrob("Effect of Food Resource and Gender on Body Mass for Three Types of Penguins", gp=gpar(fontsize=20)))
+
+```
+Initial insights: The penguins dataset provides data on three penguin species—Adelie, Chinstrap, and Gentoo—found in Antarctica. By examining features like body mass and flipper length, we can explore physical differences between species and how they adapt to their environment. Nitrogen and carbon isotope values (Delta 15 N and Delta 13 C) offer clues about each species' diet and feeding areas, showing their roles in the ecosystem. Comparing these three species helps us understand what makes each one unique. This dataset supports insights into biodiversity and species-specific adaptations in their 
+
+EDA: First, we will conduct data cleaning by removing any missing values to ensure the accuracy of our analysis and selecting variables relevant to our research questions, such as body mass, culmen length, culmen depth, and flipper length. 
+
+Next, we will perform descriptive statistics, filtering data by penguin species (Adelie, Chinstrap, Gentoo) and calculating key statistics (e.g., minimum, maximum, median, mean) for each species to facilitate comparison. 
+
+For data visualization, we’ll address the first research question by creating correlation heatmaps to examine relationships among penguin traits like body mass and flipper length across species. For the second research question, we’ll use scatter plots to illustrate the effects of sex and food resources (using nitrogen and carbon isotopes as proxies) on body mass, using color gradients and shapes to differentiate between sex and isotope concentration.

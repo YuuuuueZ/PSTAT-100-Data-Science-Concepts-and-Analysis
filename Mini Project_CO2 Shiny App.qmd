@@ -1,0 +1,258 @@
+---
+title: 'Mini Project 2'
+subtitle: "PSTAT100: Data Science Concepts and Analysis" 
+
+author: "Instructor: Ali Abuzaid"
+date: "`r Sys.Date()`" 
+format: 
+ pdf:
+    code-fold: true
+    code-line-numbers: true
+    code-copy: true
+    code-tools: true
+    self-contained: true
+    toc: false
+    toc-location: left
+    number-sections: true
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message =  FALSE)
+knitr::opts_chunk$set(warning =  FALSE)
+knitr::opts_chunk$set(error =  FALSE)
+bfcolor <- function(x, color) {
+  if (knitr::is_latex_output()) {
+    sprintf("\\textcolor{%s}{\\textbf{%s}}", color, x)
+  } else if (knitr::is_html_output()) {
+    sprintf("<span style='color: %s;'><b>%s</b></span>", color, x)
+  } else x
+}
+```
+
+
+:::callout
+<div style="text-align: center">
+<span style="color: blue;"> **STUDENT NAME **</span> 
+</div>
+- Harry He    (7133085)
+- Yue Zhu     (A1F8C52)
+- Tina Zhou   (48761653)
+- Xihua Yao   (5927777)
+:::
+
+:::{.callout-tip}
+# Instructions
+
+* This mini project aims to familiarize you with real-life data sourced from various resources.
+
+* The mini project includes narrative questions. While these questions are primarily based on lecture material and prerequisites, they may also require independent thinking and investigation.
+
+* Collaborate in groups of **3-4** students from the **same discussion session**; individual submissions **will not be accepted**.
+
+* Ensure that all `R` code, mathematical formulas, and workings are presented clearly and appropriately.
+
+* Please submit a .zip file of the folder you create, containing your `app.R` file along with the report.
+
+
+**Information on Grading**
+To grade your project submissions, the grader will download your project files and run the app you created locally. 
+
+**Important:** If your app fails to open due to issues like incorrect file format or improper zipping, your group will receive a score of ZERO for this project. It's essential to submit a functioning app for fair grading. Thank you for your understanding!**
+:::
+
+:::{.callout-caution}
+# Due Date
+**Due Date:** Friday, November 15, 2024, 11:59 PM
+:::
+
+
+
+\newpage
+
+
+
+# Overview
+
+**Project Title**: Interactive Exploration of the 'CO2' Dataset
+
+## Objectives:
+
+**Data Exploration**: Students will gain hands-on experience in data exploration and visualization using a classic dataset available in `R`.
+
+**Shiny App Development**: Students will learn the basics of building a Shiny app, including UI design and server logic.
+
+**User Interaction**: Students will implement interactive features allowing users to filter and visualize the dataset.
+
+**Presentation of Results**: Students will summarize their findings and demonstrate the app to their peers.
+Dataset:
+
+## Dataset 
+Choose any dataset available in R (e.g., `mtcars`, `iris`, `diamonds`, etc.). You can load datasets directly using built-in `R` functions.
+
+
+# Tasks:
+
+## Data Loading and Preparation:
+
+1- Load your chosen dataset using the following R code:
+
+```{r}
+data(CO2)
+head(CO2)
+```
+
+2- Explore the dataset to understand its structure and perform any necessary data cleaning. Use functions like summary(mtcars) and str(mtcars) for insights.
+
+```{r}
+summary(CO2)
+str(CO2)
+names(CO2)
+dim(CO2)
+sum(is.na(CO2))
+range(CO2$conc)
+```
+
+## Shiny App Development
+
+**User Interface (UI):**
+
+1- Create a sidebar layout that allows users to select:
+
+* A variable to analyze.
+
+* Type of plot (e.g., scatter plot, histogram, box plot).
+
+* Display the selected plot and relevant summary statistics.
+
+
+```{r}
+library(shiny)
+data('CO2')
+
+ui <- fluidPage(
+    titlePanel("CO2 Dataset Interactive Explorer"),
+    
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("variable", "Analyze CO2 Data By:",
+                        choices = c("CO2 Uptake Rate" = "uptake", "CO2 Concentration Level" = "conc")),
+            
+            selectInput("group", "Group Data By:",
+                        choices = c("Treatment", "Type")),
+            
+            selectInput("plotType", "Type of Plot to Display:",
+                        choices = c("Scatter Plot", "Histogram", "Box Plot")),
+            
+            sliderInput("concRange", "Concentration Range Filter:",
+                        min = min(CO2$conc), max = max(CO2$conc),
+                        value = c(min(CO2$conc), max(CO2$conc))),
+            
+            sliderInput("uptakeRange", "Uptake Range Filter:",
+                        min = min(CO2$uptake), max = max(CO2$uptake),
+                        value = c(min(CO2$uptake), max(CO2$uptake)))
+        ),
+        mainPanel(
+            plotOutput("plot"),
+            verbatimTextOutput("summary")
+        )
+    )
+)
+
+```
+
+
+**Server Logic:** Write server code to respond to user inputs and generate the selected plot dynamically.
+
+```{r}
+
+server <- function(input, output) {
+  
+  filteredData <- reactive({
+      CO2[CO2$conc >= input$concRange[1] & 
+          CO2$conc <= input$concRange[2] &
+          CO2$uptake >= input$uptakeRange[1] &
+          CO2$uptake <= input$uptakeRange[2], ]
+  })
+
+  
+  output$plot <- renderPlot({
+    data <- filteredData()
+    
+    if (input$plotType == "Scatter Plot") {
+              colors <- c("skyblue", "orange", "green", "orchid4") 
+
+       layout(matrix(c(1, 2), nrow = 1), widths = c(4, 1))
+
+       par(mar = c(5, 4, 4, 2) + 0.1)
+       plot(data$conc, data$uptake, 
+            col = colors[as.factor(data[[input$group]])],
+            pch = 16, 
+            xlab = "Concentration", ylab = "Uptake",
+            main = paste("Scatter Plot of Uptake vs Concentration by", input$group))
+       
+       
+       tryCatch({model <- lm(uptake ~ conc, data = data) 
+                 abline(model, col = "firebrick", lwd = 2)}, 
+                error = function(err) {
+                showNotification("Best-fit line cannot be found!", type = "error")})
+       
+
+       par(mar = c(5, 0, 4, 0))
+       plot.new()
+       legend("center", 
+              legend = levels(as.factor(data[[input$group]])), 
+              col = colors[1:length(levels(as.factor(data[[input$group]])))], 
+              pch = 16, 
+              title = input$group, 
+              bty = "n")
+
+    } else if (input$plotType == "Histogram") {
+      hist(data[[input$variable]], 
+           xlab = input$variable, main = paste("Histogram of", input$variable),
+           col = "lightcyan3")
+    } else if (input$plotType == "Box Plot") {
+      boxplot(data[[input$variable]] ~ data[[input$group]],  
+              xlab = "Group", ylab = input$variable, 
+              main = paste("Box Plot of", input$variable,"by", input$group),
+              col = "bisque4",       
+            border = "black")  
+    }
+  })
+  
+  output$summary <- renderPrint({
+    if (input$variable == "uptake")
+    {
+      print("Uptake Rate")
+    }
+    else
+    {
+      print("Concentration Level")
+    }
+    
+    data <- filteredData()
+    summary(data[[input$variable]])
+  })
+}
+
+ 
+shinyApp (ui = ui, server = server)
+
+```
+
+## Interactivity
+1- Implement features such as sliders to adjust numerical variables and checkboxes for selection.
+
+2- Consider adding tooltips or hover functionality for enhanced user experience.
+
+In the updated Shiny app, the labels in the UI have been changed to make it clearer for users to pick options, like choosing between different CO2 measurements. A regression line was added to the scatter plot to show the relationship between concentration and uptake, and it appears when there are enough data points. Colors were also added to the scatter plot, histogram, and box plot to make it easier to read the data. Finally, tooltips and plot titles were improved to give users more context and make the app easier to understand. If the regression line does not exist, a "Best-fit line cannot be found!" reminder will show up.
+
+# Documentation and Presentation
+
+The Documentation of the dataset "CO2" is also inside the zip file.
+
+# References
+
+1- Shiny Documentation: [Welcome to Shiny](https://shiny.posit.co/r/getstarted/shiny-basics/lesson1/index.html)
+
+2- Hadley Wickham (2021) Mastering Shiny, O'Reilly Media. (https://mastering-shiny.org/)
+
+
